@@ -5,6 +5,8 @@ import { createSlice, configureStore } from '@reduxjs/toolkit';
 import { Provider, useDispatch, useSelector } from 'react-redux';
 import { create } from 'zustand';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || '${API_BASE_URL}';
+
 const configSlice = createSlice({
   name: 'config',
   initialState: { botName: 'OmniBot', status: 'idle', message: '' },
@@ -21,7 +23,7 @@ const rtkStore = configureStore({ reducer: { config: configSlice.reducer } });
 const saveBotConfiguration = (botName, token) => async (dispatch) => {
   dispatch(saveStart());
   try {
-    const response = await fetch('http://localhost:8081/api/v1/chatbot/config', {
+    const response = await fetch(`${API_BASE_URL}/api/v1/chatbot/config`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -233,8 +235,8 @@ function LoginPage() {
     setLoading(true);
     try {
       const url = isLogin 
-        ? 'http://localhost:8081/api/v1/auth/login' 
-        : 'http://localhost:8081/api/v1/auth/register';
+        ? `${API_BASE_URL}/api/v1/auth/login` 
+        : `${API_BASE_URL}/api/v1/auth/register`;
       const res = await fetch(url, {
         mode: 'cors', // Ensure CORS is enabled
         method: 'POST',
@@ -258,7 +260,7 @@ function LoginPage() {
     setError('');
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:8081/api/v1/auth/guest', { method: 'POST' });
+      const res = await fetch(`${API_BASE_URL}/api/v1/auth/guest`, { method: 'POST' });
       const data = await res.json();
       setAuth(data.token, data.username, data.userId, data.isAdmin || false);
     } catch (err) {
@@ -403,7 +405,7 @@ function AdminDashboard({ onBack }) {
 
   const fetchAnalytics = async () => {
     try {
-      const res = await fetch('http://localhost:8081/api/v1/admin/analytics', {
+      const res = await fetch('${API_BASE_URL}/api/v1/admin/analytics', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) setAnalytics(await res.json());
@@ -416,7 +418,7 @@ function AdminDashboard({ onBack }) {
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch('http://localhost:8081/api/v1/admin/users', {
+      const res = await fetch('${API_BASE_URL}/api/v1/admin/users', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) setUsers(await res.json());
@@ -435,7 +437,7 @@ function AdminDashboard({ onBack }) {
       return;
     }
     try {
-      const res = await fetch(`http://localhost:8081/api/v1/admin/chat/${user._id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/v1/admin/chat/${user._id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
@@ -463,7 +465,7 @@ function AdminDashboard({ onBack }) {
       return;
     }
     try {
-      const res = await fetch(`http://localhost:8081/api/v1/admin/users/${userId}`, {
+      const res = await fetch(`${API_BASE_URL}/api/v1/admin/users/${userId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -484,7 +486,7 @@ function AdminDashboard({ onBack }) {
       return;
     }
     try {
-      const res = await fetch(`http://localhost:8081/api/v1/admin/chat/${userId}`, {
+      const res = await fetch(`${API_BASE_URL}/api/v1/admin/chat/${userId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -672,7 +674,7 @@ function ChatbotWorkspace() {
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const res = await fetch('http://localhost:8081/api/v1/chat/history', {
+        const res = await fetch('${API_BASE_URL}/api/v1/chat/history', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (res.ok) {
@@ -724,7 +726,7 @@ function ChatbotWorkspace() {
     addMessage({ sender: 'bot', text: '', timestamp: new Date().toISOString() });
     setStreaming(true);
     try {
-      const response = await fetch('http://localhost:8081/api/v1/chatbot/stream', {
+      const response = await fetch('${API_BASE_URL}/api/v1/chatbot/stream', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
