@@ -10,12 +10,14 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -28,6 +30,7 @@ var (
 	chatCollection    *mongo.Collection
 	configCollection  *mongo.Collection
 	jwtSecret         = []byte("your-secret-key-change-in-production-please-12345678901234567890")
+	apiKey            string
 )
 
 type User struct {
@@ -641,6 +644,18 @@ func sendFallbackResponse(tokenChan chan string, userPrompt string, botResponseT
 }
 
 func main() {
+	// Load environment variables from .env
+	err := godotenv.Load()
+	if err != nil {
+		log.Println("⚠️ Warning: Could not load .env file")
+	}
+	
+	// Get GROQ API key from environment variable
+	apiKey = os.Getenv("GROQ_API_KEY")
+	if apiKey == "" {
+		log.Println("⚠️ Warning: GROQ_API_KEY not set in environment")
+	}
+
 	initDB()
 	r := chi.NewRouter()
 
