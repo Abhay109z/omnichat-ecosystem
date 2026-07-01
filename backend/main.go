@@ -673,12 +673,14 @@ func main() {
 	initDB()
 	r := chi.NewRouter()
 
-	// CORS setup - allow any origin for now (MUST COME FIRST!)
+	// CORS setup - allow any origin for now
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"*"},
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-Requested-With"},
-		ExposedHeaders:   []string{"Link"},
+		AllowOriginFunc: func(r *http.Request, origin string) bool {
+			return true
+		},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"},
+		AllowedHeaders:   []string{"*"},
+		ExposedHeaders:   []string{"*"},
 		AllowCredentials: true,
 		MaxAge:           300,
 	}))
