@@ -259,9 +259,20 @@ function LoginPage() {
   const handleGuestLogin = async () => {
     setError('');
     setLoading(true);
+    console.log("Using API URL:", API_BASE_URL);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/v1/auth/guest`, { method: 'POST' });
-      const data = await res.json();
+      const url = `${API_BASE_URL}/api/v1/auth/guest`;
+      console.log("Calling:", url);
+      const res = await fetch(url, { method: 'POST' });
+      console.log("Response status:", res.status);
+      const text = await res.text();
+      console.log("Response text:", text);
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        throw new Error(`Invalid JSON: ${text}`);
+      }
       setAuth(data.token, data.username, data.userId, data.isAdmin || false);
     } catch (err) {
       setError(err.message);
