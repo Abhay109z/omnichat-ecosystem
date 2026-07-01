@@ -282,7 +282,7 @@ function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-neutral-950 via-neutral-900 to-neutral-950 flex items-center justify-center p-4">
+    <main className="min-h-screen bg-gradient-to-br from-neutral-950 via-neutral-900 to-neutral-950 flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-neutral-900 border border-neutral-800 rounded-2xl p-8 shadow-2xl">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-600/20 rounded-full mb-4">
@@ -326,7 +326,7 @@ function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 rounded-lg transition disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full bg-emerald-700 hover:bg-emerald-600 text-white font-semibold py-3 rounded-lg transition disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {loading ? (
               <>
@@ -341,7 +341,7 @@ function LoginPage() {
 
         <div className="my-6 flex items-center">
           <div className="flex-1 h-px bg-neutral-700" />
-          <span className="px-4 text-sm text-neutral-500">or</span>
+          <span className="px-4 text-sm text-neutral-400">or</span>
           <div className="flex-1 h-px bg-neutral-700" />
         </div>
 
@@ -363,7 +363,7 @@ function LoginPage() {
           </button>
         </p>
       </div>
-    </div>
+    </main>
   );
 }
 
