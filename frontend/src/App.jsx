@@ -416,7 +416,7 @@ function AdminDashboard({ onBack }) {
 
   const fetchAnalytics = async () => {
     try {
-      const res = await fetch('${API_BASE_URL}/api/v1/admin/analytics', {
+      const res = await fetch(`${API_BASE_URL}/api/v1/admin/analytics`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) setAnalytics(await res.json());
@@ -429,7 +429,7 @@ function AdminDashboard({ onBack }) {
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch('${API_BASE_URL}/api/v1/admin/users', {
+      const res = await fetch(`${API_BASE_URL}/api/v1/admin/users`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) setUsers(await res.json());
@@ -685,7 +685,7 @@ function ChatbotWorkspace() {
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const res = await fetch('${API_BASE_URL}/api/v1/chat/history', {
+        const res = await fetch(`${API_BASE_URL}/api/v1/chat/history`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (res.ok) {
@@ -737,7 +737,7 @@ function ChatbotWorkspace() {
     addMessage({ sender: 'bot', text: '', timestamp: new Date().toISOString() });
     setStreaming(true);
     try {
-      const response = await fetch('${API_BASE_URL}/api/v1/chatbot/stream', {
+      const response = await fetch(`${API_BASE_URL}/api/v1/chatbot/stream`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
