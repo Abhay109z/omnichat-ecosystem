@@ -1,0 +1,10 @@
+@import "tailwindcss";
+
+/* THE NUCLEAR TEST: This forces the screen to turn black 
+   even if Tailwind fails to compile */
+body {
+  background-color: #0a0a0a !important;
+  color: white !important;
+  margin: 0;
+  padding: 0;
+}
