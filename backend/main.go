@@ -664,16 +664,7 @@ func main() {
 	initDB()
 	r := chi.NewRouter()
 
-	// Root route for health check
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"message": "OmniChat Ecosystem API is running!",
-			"status":  "ok",
-		})
-	})
-
-	// CORS setup - allow any origin for now
+	// CORS setup - allow any origin for now (MUST COME FIRST!)
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"*"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
@@ -682,6 +673,15 @@ func main() {
 		AllowCredentials: true,
 		MaxAge:           300,
 	}))
+
+	// Root route for health check
+	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"message": "OmniChat Ecosystem API is running!",
+			"status":  "ok",
+		})
+	})
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Post("/auth/register", registerHandler)
