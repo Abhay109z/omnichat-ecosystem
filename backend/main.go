@@ -86,6 +86,9 @@ func initDB() {
 
 	mongoURI := os.Getenv("MONGO_URI")
 	if mongoURI == "" {
+		mongoURI = os.Getenv("MONGODB_URI")
+	}
+	if mongoURI == "" {
 		mongoURI = "mongodb://localhost:27017"
 	}
 
