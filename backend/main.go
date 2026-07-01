@@ -33,6 +33,12 @@ var (
 	apiKey            string
 )
 
+func respondError(w http.ResponseWriter, message string, statusCode int) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+	json.NewEncoder(w).Encode(map[string]string{"error": message})
+}
+
 type User struct {
 	ID       primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
 	Username string             `json:"username" bson:"username"`
@@ -133,7 +139,7 @@ func generateToken(userID primitive.ObjectID, isGuest, isAdmin bool) (string, er
 func registerHandler(w http.ResponseWriter, r *http.Request) {
 	var user User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		respondError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -143,13 +149,13 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 	var existingUser User
 	err := userCollection.FindOne(ctx, bson.M{"username": user.Username}).Decode(&existingUser)
 	if err == nil {
-		http.Error(w, "Username already exists", http.StatusConflict)
+		respondError(w, "Username already exists", http.StatusConflict)
 		return
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
-		http.Error(w, "Error processing password", http.StatusInternalServerError)
+		respondError(w, "Error processing password", http.StatusInternalServerError)
 		return
 	}
 	user.Password = string(hashedPassword)
@@ -159,13 +165,13 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 
 	_, err = userCollection.InsertOne(ctx, user)
 	if err != nil {
-		http.Error(w, "Error creating user", http.StatusInternalServerError)
+		respondError(w, "Error creating user", http.StatusInternalServerError)
 		return
 	}
 
 	token, err := generateToken(user.ID, false, false)
 	if err != nil {
-		http.Error(w, "Error generating token", http.StatusInternalServerError)
+		respondError(w, "Error generating token", http.StatusInternalServerError)
 		return
 	}
 
@@ -184,7 +190,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		Password string `json:"password"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		respondError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -194,19 +200,19 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	var user User
 	err := userCollection.FindOne(ctx, bson.M{"username": credentials.Username}).Decode(&user)
 	if err != nil {
-		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		respondError(w, "Invalid credentials", http.StatusUnauthorized)
 		return
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(credentials.Password))
 	if err != nil {
-		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		respondError(w, "Invalid credentials", http.StatusUnauthorized)
 		return
 	}
 
 	token, err := generateToken(user.ID, user.IsGuest, user.IsAdmin)
 	if err != nil {
-		http.Error(w, "Error generating token", http.StatusInternalServerError)
+		respondError(w, "Error generating token", http.StatusInternalServerError)
 		return
 	}
 
@@ -233,7 +239,7 @@ func guestLoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	token, err := generateToken(user.ID, true, false)
 	if err != nil {
-		http.Error(w, "Error generating token", http.StatusInternalServerError)
+		respondError(w, "Error generating token", http.StatusInternalServerError)
 		return
 	}
 
@@ -249,7 +255,7 @@ func guestLoginHandler(w http.ResponseWriter, r *http.Request) {
 func getChatHistoryHandler(w http.ResponseWriter, r *http.Request) {
 	userID, _, _, err := getUserFromToken(r)
 	if err != nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		respondError(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
@@ -258,7 +264,7 @@ func getChatHistoryHandler(w http.ResponseWriter, r *http.Request) {
 
 	objID, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
-		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		respondError(w, "Invalid user ID", http.StatusBadRequest)
 		return
 	}
 
@@ -266,14 +272,14 @@ func getChatHistoryHandler(w http.ResponseWriter, r *http.Request) {
 	opts := options.Find().SetSort(bson.D{{Key: "timestamp", Value: 1}})
 	cursor, err := chatCollection.Find(ctx, filter, opts)
 	if err != nil {
-		http.Error(w, "Error fetching history", http.StatusInternalServerError)
+		respondError(w, "Error fetching history", http.StatusInternalServerError)
 		return
 	}
 	defer cursor.Close(ctx)
 
 	var messages []Message
 	if err = cursor.All(ctx, &messages); err != nil {
-		http.Error(w, "Error parsing history", http.StatusInternalServerError)
+		respondError(w, "Error parsing history", http.StatusInternalServerError)
 		return
 	}
 
@@ -301,7 +307,7 @@ func requireAdmin(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _, isAdmin, err := getUserFromToken(r)
 		if err != nil || !isAdmin {
-			http.Error(w, "Forbidden", http.StatusForbidden)
+			respondError(w, "Forbidden", http.StatusForbidden)
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -354,7 +360,7 @@ func deleteAdminUser(w http.ResponseWriter, r *http.Request) {
 	userIDParam := chi.URLParam(r, "userId")
 	objID, err := primitive.ObjectIDFromHex(userIDParam)
 	if err != nil {
-		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		respondError(w, "Invalid user ID", http.StatusBadRequest)
 		return
 	}
 
@@ -367,7 +373,7 @@ func deleteAdminUser(w http.ResponseWriter, r *http.Request) {
 	// Then delete user
 	_, err = userCollection.DeleteOne(ctx, bson.M{"_id": objID})
 	if err != nil {
-		http.Error(w, "Error deleting user", http.StatusInternalServerError)
+		respondError(w, "Error deleting user", http.StatusInternalServerError)
 		return
 	}
 
@@ -382,13 +388,13 @@ func deleteAdminChatHistory(w http.ResponseWriter, r *http.Request) {
 	userIDParam := chi.URLParam(r, "userId")
 	objID, err := primitive.ObjectIDFromHex(userIDParam)
 	if err != nil {
-		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		respondError(w, "Invalid user ID", http.StatusBadRequest)
 		return
 	}
 
 	_, err = chatCollection.DeleteMany(ctx, bson.M{"userId": objID})
 	if err != nil {
-		http.Error(w, "Error deleting chat history", http.StatusInternalServerError)
+		respondError(w, "Error deleting chat history", http.StatusInternalServerError)
 		return
 	}
 
@@ -403,14 +409,14 @@ func getAdminUsers(w http.ResponseWriter, r *http.Request) {
 	opts := options.Find().SetProjection(bson.M{"password": 0})
 	cursor, err := userCollection.Find(ctx, bson.M{}, opts)
 	if err != nil {
-		http.Error(w, "Error fetching users", http.StatusInternalServerError)
+		respondError(w, "Error fetching users", http.StatusInternalServerError)
 		return
 	}
 	defer cursor.Close(ctx)
 
 	var users []User
 	if err = cursor.All(ctx, &users); err != nil {
-		http.Error(w, "Error parsing users", http.StatusInternalServerError)
+		respondError(w, "Error parsing users", http.StatusInternalServerError)
 		return
 	}
 
@@ -425,7 +431,7 @@ func getAdminUserChat(w http.ResponseWriter, r *http.Request) {
 	userIDParam := chi.URLParam(r, "userId")
 	objID, err := primitive.ObjectIDFromHex(userIDParam)
 	if err != nil {
-		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		respondError(w, "Invalid user ID", http.StatusBadRequest)
 		return
 	}
 
@@ -433,14 +439,14 @@ func getAdminUserChat(w http.ResponseWriter, r *http.Request) {
 	opts := options.Find().SetSort(bson.D{{Key: "timestamp", Value: 1}})
 	cursor, err := chatCollection.Find(ctx, filter, opts)
 	if err != nil {
-		http.Error(w, "Error fetching chat history", http.StatusInternalServerError)
+		respondError(w, "Error fetching chat history", http.StatusInternalServerError)
 		return
 	}
 	defer cursor.Close(ctx)
 
 	var messages []Message
 	if err = cursor.All(ctx, &messages); err != nil {
-		http.Error(w, "Error parsing chat history", http.StatusInternalServerError)
+		respondError(w, "Error parsing chat history", http.StatusInternalServerError)
 		return
 	}
 
@@ -452,7 +458,7 @@ func handleSaveConfig(w http.ResponseWriter, r *http.Request) {
 	var config BotConfig
 	if err := json.NewDecoder(r.Body).Decode(&config); err != nil {
 		log.Printf("⚠️ Config decode error: %v", err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		respondError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	config.ID = "default"
@@ -467,7 +473,7 @@ func handleSaveConfig(w http.ResponseWriter, r *http.Request) {
 		_, err := configCollection.UpdateOne(ctx, filter, update, opts)
 		if err != nil {
 			log.Printf("⚠️ Database error: %v", err)
-			http.Error(w, "Database persistence failure", http.StatusInternalServerError)
+			respondError(w, "Database persistence failure", http.StatusInternalServerError)
 			return
 		}
 	}
@@ -478,20 +484,20 @@ func handleSaveConfig(w http.ResponseWriter, r *http.Request) {
 func handleChatStream(w http.ResponseWriter, r *http.Request) {
 	userID, _, _, err := getUserFromToken(r)
 	if err != nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		respondError(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
 	flusher, ok := w.(http.Flusher)
 	if !ok {
-		http.Error(w, "Streaming unsupported by runtime infrastructure", http.StatusInternalServerError)
+		respondError(w, "Streaming unsupported by runtime infrastructure", http.StatusInternalServerError)
 		return
 	}
 
 	var req StreamRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		log.Printf("⚠️ Stream request decode error: %v", err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		respondError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
